@@ -20,6 +20,9 @@ import javax.swing.JPanel;
  * configuration file, and also sets the 
  * mainForm to "visible" once the file
  * is selected.
+ * 
+ * @authors jbelmont, njooma
+ *
  */
 @SuppressWarnings("serial")
 public class SelectConfig extends JFrame {
@@ -65,7 +68,7 @@ public class SelectConfig extends JFrame {
 	public boolean setConfig(MainForm mainForm) {
 		_mainForm = mainForm;
 		String appPath = mainForm.getAppPath();
-		Path configFile = Paths.get(appPath, "config/HTAPP_config_options.txt"); //File that contains names of available param XML files
+		Path configFile = Paths.get(appPath, "config/HTAPP_config_options.txt"); 
 		//If file doesn't exist, alert the user and close with error.
 		if (Files.notExists(configFile)) {
 			JOptionPane.showMessageDialog(this, "Cannot find the file " + configFile.toString(), "File Not Found", JOptionPane.ERROR_MESSAGE);
