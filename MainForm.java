@@ -20,6 +20,7 @@ import java.awt.Point;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -34,11 +35,16 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Vector;
 
+/**
+ * @authors jbelmont, njooma
+ *
+ */
 @SuppressWarnings("serial")
 public class MainForm extends JFrame implements Form{
 
@@ -217,7 +223,7 @@ public class MainForm extends JFrame implements Form{
 			//Find the finished sample list
 			_sampleListPath = Paths.get(this.getAppPath(), _params.getClientParam("SAMPLE_LIST", "N/A"));
 			if (Files.notExists(_sampleListPath)) {
-				_sampleListPath = Paths.get(this.getAppPath(), "finishedSampleList.txt");
+				_sampleListPath = Paths.get(this.getAppPath(), "finishedSampleList.txt"); 
 				if (Files.notExists(_sampleListPath)) {
 					boolean sampleListFound = false;
 					JOptionPane.showMessageDialog(this, "Cannot find the finished sample list.\nPlease place the finished sample list in the\ncurrent application directory with the filename\n'finishedSampleList.txt'.\n\nPress OK when ready.", "File Not Found", JOptionPane.WARNING_MESSAGE);
@@ -319,11 +325,12 @@ public class MainForm extends JFrame implements Form{
 		ObjectOutputStream out = null;
 		BufferedReader in = null;
 		String fileToSend = _samplesToRun.get(0);
+		this.log("fileToSend: " + fileToSend);
 		System.out.println("File to send:" + fileToSend);
 		int errorCount = 0;
 		try {
 			//Connect the socket to AutoSearch and open I/O
-			sock = new Socket(_params.getGlobalParam("SEQUEST", "sequest.biomed.brown.edu"), Integer.parseInt(_params.getGlobalParam("SEQUEST.Port", "666")));
+			sock = new Socket(_params.getGlobalParam("SEQUEST", ""), Integer.parseInt(_params.getGlobalParam("SEQUEST.Port", "666"))); 
 			out = new ObjectOutputStream(sock.getOutputStream());
 			in = new BufferedReader(new InputStreamReader(sock.getInputStream()));
 			System.out.println("Sending 'Ready?' to Sequest");
@@ -342,6 +349,7 @@ public class MainForm extends JFrame implements Form{
 					//Send files to AutoSearch
 					String sequestSend = fileToSend.substring(0, fileToSend.indexOf("+"));
 					sequestSend = sequestSend.substring(0, sequestSend.lastIndexOf(":"));
+					this.log("sequestSend: " + sequestSend);
 					while(!this.pushFiles(sequestSend, out) && errorCount<20){
 						if (errorCount++ ==20) {
 							throw(new IOException());
@@ -433,15 +441,19 @@ public class MainForm extends JFrame implements Form{
 	 * @param file
 	 * @param out
 	 * @return
+	 * @throws IOException 
 	 */
-	private boolean pushFiles(String file, ObjectOutputStream out) {
-		Path baseDir = Paths.get(_params.getClientParam("LOCAL_PATH", ""));
+	private boolean pushFiles(String file, ObjectOutputStream out) throws IOException {
+		Path baseDir = Paths.get(_params.getClientParam("LOCAL_PATH", "")); 
+		this.log("baseDir: " + baseDir.toString());
+		
 		try {
 			Path filePath = baseDir.relativize(Paths.get(file));
-			//System.out.println("File to send: "+filePath);
+			System.out.println("File to send: "+filePath);
 			String extn = null;
 			//Path on AutoSearch where files should be written
 			Path sequestPath = Paths.get(_params.getIdentity(), filePath.toString());
+			System.out.println("Sequest Path: " + sequestPath);
 			out.writeUTF(sequestPath.toString());
 			out.flush();
 			//Obtain a list of all the files associated with the sample
@@ -527,6 +539,7 @@ public class MainForm extends JFrame implements Form{
 	 * new samples that need to be run. Because error samples
 	 * are never removed from the queue, they are not checked
 	 * for in this method.
+	 * 
 	 */
 	public void checkSampleListFile() {
 		try {
@@ -557,6 +570,9 @@ public class MainForm extends JFrame implements Form{
 	 * Open Sample List button (openButton). It opens
 	 * the finishedSampleList file in the operating 
 	 * system's default text editing application.
+	 * 
+	 * @author njooma
+	 *
 	 */
 	private class OpenListener implements ActionListener {
 		public void actionPerformed(ActionEvent e) {
@@ -581,6 +597,9 @@ public class MainForm extends JFrame implements Form{
 	 * This class performs the action of the Rerun Button.
 	 * It gets the selected rows from the queue and adds
 	 * them to the sample list so that they will be run again.
+	 * 
+	 * @author njooma
+	 *
 	 */
 	private class RerunSampleListener implements ActionListener {
 		public void actionPerformed(ActionEvent e) {
